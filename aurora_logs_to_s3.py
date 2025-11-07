@@ -9,6 +9,22 @@ import json
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+def send_heartbeat(region_name):
+    """发送心跳到CloudWatch"""
+    try:
+        cloudwatch = boto3.client('cloudwatch', region_name=region_name)
+        cloudwatch.put_metric_data(
+            Namespace='AuroraLogs',
+            MetricData=[{
+                'MetricName': 'Success',
+                'Value': 1,
+                'Unit': 'Count'
+            }]
+        )
+        logger.info('Heartbeat sent to CloudWatch successfully')
+    except Exception as e:
+        logger.warning(f'Failed to send heartbeat: {str(e)}')
+
 def download_aurora_logs(rds_client, db_instance_identifier, output_dir, days=7, upload_record=None, s3_prefix=None):
     """
     下载Aurora数据库实例的日志文件
@@ -343,6 +359,10 @@ def main():
             save_upload_record_to_s3(s3_client, s3_bucket_name, record_key, record_file, upload_record)
             # 继续处理下一个实例，而不是中断整个程序
             continue
+    
+    # 脚本执行成功后发送心跳
+    send_heartbeat(region_name)
+    logger.info("Aurora logs processing completed successfully")
 
 if __name__ == "__main__":
     main()

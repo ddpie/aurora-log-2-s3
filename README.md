@@ -128,12 +128,27 @@ The script requires the following minimum IAM permissions to work properly:
                 "arn:aws:s3:::your-bucket-name",
                 "arn:aws:s3:::your-bucket-name/*"
             ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "cloudwatch:PutMetricData"
+            ],
+            "Resource": "*"
         }
     ]
 }
  ```
 
 Please replace your-bucket-name with your actual S3 bucket name.
+
+## CloudWatch Monitoring
+The script automatically sends heartbeat metrics to CloudWatch for monitoring:
+- **Namespace**: `AuroraLogs`
+- **Metric Name**: `Success`
+- **Value**: `1` (sent on successful completion)
+
+You can create CloudWatch alarms based on this metric to monitor script execution status.
 
 ## install Fluentbit
 ```bash
