@@ -102,6 +102,48 @@ s3://your-bucket-name/aurora-logs-records/instance-id_YYYY-MM-DD.json
 - If log files cannot be downloaded, ensure the IAM user/role has permission to access RDS service and related APIs
 - If files cannot be uploaded to S3, ensure the IAM user/role has permission to access the S3 bucket
 - Check the script's log output for detailed error information
+
+## Log Download Methods Comparison
+
+This tool uses the `DownloadDBLogFilePortion` API method to download Aurora log files. Here's a comparison of available methods:
+
+### DownloadDBLogFilePortion (Current Implementation)
+- **Type**: AWS RDS API operation (via boto3)
+- **Advantages**:
+  - Integrated with AWS SDK and boto3
+  - Built-in error handling and retry mechanisms
+  - Supports AWS authentication and IAM roles
+  - Consistent with other AWS API operations
+- **Limitations**:
+  - 1MB size limit per request (requires pagination for large files)
+  - Higher API call frequency may lead to throttling
+  - More complex implementation for large files
+
+### DownloadCompleteDBLogFile (Alternative)
+- **Type**: REST endpoint
+- **Advantages**:
+  - Can download complete log files in a single request
+  - No 1MB size limitation
+  - Simpler implementation for large files
+- **Limitations**:
+  - Requires manual HTTP request handling
+  - Need to implement AWS Signature Version 4 authentication
+  - Less integrated with existing AWS SDK workflows
+  - Manual error handling and retry logic required
+
+### Recommendation
+The current implementation using `DownloadDBLogFilePortion` is recommended because:
+- Better integration with existing AWS infrastructure
+- More robust error handling
+- Consistent with AWS best practices
+- The pagination logic already handles the 1MB limitation effectively
+
+### Throttling Mitigation
+To reduce throttling issues with `DownloadDBLogFilePortion`:
+- Implement exponential backoff retry logic
+- Add delays between API calls
+- Consider using AWS CloudWatch Logs for log streaming instead of direct download
+- Monitor API usage and adjust frequency as needed
 ## Required IAM Permissions
 The script requires the following minimum IAM permissions to work properly:
 
@@ -198,3 +240,9 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## References
+
+- [DownloadDBLogFilePortion API](https://docs.aws.amazon.com/AmazonRDS/latest/APIReference/API_DownloadDBLogFilePortion.html)
+- [Reading log file contents using REST](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/DownloadCompleteDBLogFile.html)
+- [Monitoring Amazon RDS log files](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/USER_LogAccess.html)
